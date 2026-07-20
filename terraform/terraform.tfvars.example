@@ -1,0 +1,5 @@
+aws_region       = "us-east-1"
+project_name     = "job-market-intelligence"
+environment      = "dev"
+container_image  = "123456789012.dkr.ecr.us-east-1.amazonaws.com/job-market-intelligence-platform:latest"
+db_password      = "replace-me"
