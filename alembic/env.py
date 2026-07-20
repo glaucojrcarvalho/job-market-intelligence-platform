@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from job_market.config.settings import Settings
-from job_market.infrastructure.db.base import Base
 from job_market.infrastructure.db import models  # noqa: F401
+from job_market.infrastructure.db.base import Base
 
 config = context.config
 

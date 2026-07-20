@@ -56,6 +56,5 @@ def test_memory_analytics_reader_aggregates_skill_metrics() -> None:
     assert top_skills[0].label == "python"
     assert top_skills[0].value == 2
     assert any(
-        pair.left_skill == "python" and pair.right_skill in {"aws", "sql"}
-        for pair in cooccurrence
+        pair.left_skill == "python" and pair.right_skill in {"aws", "sql"} for pair in cooccurrence
     )

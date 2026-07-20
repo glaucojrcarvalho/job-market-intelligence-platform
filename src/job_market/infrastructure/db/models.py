@@ -92,7 +92,9 @@ class CandidateProfileModel(Base):
     skills: Mapped[list[dict]] = mapped_column(JSONVariant, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    match_results: Mapped[list["CandidateMatchModel"]] = relationship(back_populates="candidate_profile")
+    match_results: Mapped[list["CandidateMatchModel"]] = relationship(
+        back_populates="candidate_profile"
+    )
 
 
 class CandidateMatchModel(Base):
@@ -103,7 +105,9 @@ class CandidateMatchModel(Base):
         ForeignKey("candidate_profiles.id", ondelete="SET NULL"),
         nullable=True,
     )
-    job_id: Mapped[int | None] = mapped_column(ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True)
+    job_id: Mapped[int | None] = mapped_column(
+        ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True
+    )
     job_title: Mapped[str] = mapped_column(String(255), nullable=False)
     source_name: Mapped[str] = mapped_column(String(100), nullable=False)
     match_score: Mapped[float] = mapped_column(Float, nullable=False)
@@ -113,5 +117,7 @@ class CandidateMatchModel(Base):
     reasons: Mapped[list[dict]] = mapped_column(JSONVariant, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    candidate_profile: Mapped[CandidateProfileModel | None] = relationship(back_populates="match_results")
+    candidate_profile: Mapped[CandidateProfileModel | None] = relationship(
+        back_populates="match_results"
+    )
     job: Mapped[JobModel | None] = relationship(back_populates="match_results")

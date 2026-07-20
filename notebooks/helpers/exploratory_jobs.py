@@ -48,9 +48,7 @@ def parse_geekhunter_job_html(job_html: str) -> ExploratoryJobRecord:
     )
     tipo_trabalho = remote_tag.text.strip() if remote_tag else "Presencial"
     salario = (
-        _clean_text(salary_tag.text).replace("R$", "").strip()
-        if salary_tag
-        else "Nao informado"
+        _clean_text(salary_tag.text).replace("R$", "").strip() if salary_tag else "Nao informado"
     )
     detalhes = _clean_text(description_tag.text) if description_tag else ""
 
@@ -95,9 +93,7 @@ def clean_description_tokens(
 
     tokens = tokenize(description)
     lowered_tokens = (
-        token.lower()
-        for token in tokens
-        if token.isalpha() and len(token) >= minimum_token_length
+        token.lower() for token in tokens if token.isalpha() and len(token) >= minimum_token_length
     )
 
     return [

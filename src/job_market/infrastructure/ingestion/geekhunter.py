@@ -21,7 +21,8 @@ class GeekHunterHtmlAdapter:
     def parse_job_card(self, job_html: str, *, source_url: str | None = None) -> RawJobRecord:
         soup = BeautifulSoup(job_html, "html.parser")
         title_link = soup.find("a")
-        source_job_id = title_link.get("href") if title_link else None
+        href = title_link.get("href") if title_link else None
+        source_job_id = href if isinstance(href, str) else None
 
         return RawJobRecord(
             source_name=self.source_name,

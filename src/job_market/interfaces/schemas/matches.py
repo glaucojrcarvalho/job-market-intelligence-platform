@@ -35,7 +35,6 @@ class MatchResult(BaseModel):
             missing_skills=result.missing_skills,
             confidence=result.confidence,
             reasons=[
-                MatchReason(type=reason.type, message=reason.message)
-                for reason in result.reasons
+                MatchReason(type=reason.type, message=reason.message) for reason in result.reasons
             ],
         )

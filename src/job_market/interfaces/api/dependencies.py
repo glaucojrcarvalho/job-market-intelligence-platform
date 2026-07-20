@@ -12,7 +12,13 @@ from job_market.application.enrichment.service import JobEnrichmentService
 from job_market.application.ingestion.service import JobIngestionService
 from job_market.application.matching.service import CandidateMatchingService
 from job_market.application.normalization.service import JobNormalizationService
-from job_market.application.ports import EnrichmentRepository, JobRepository, MatchRepository, RawJobRepository
+from job_market.application.ports import (
+    AnalyticsReader,
+    EnrichmentRepository,
+    JobRepository,
+    MatchRepository,
+    RawJobRepository,
+)
 from job_market.config.settings import Settings
 from job_market.domain.candidates.models import CandidateProfile, CandidateSkill
 from job_market.domain.enrichment.models import JobEnrichment
@@ -110,7 +116,10 @@ class ServiceRegistry:
         candidate = CandidateProfile(
             profile_id=None,
             summary=request.summary,
-            skills=[CandidateSkill(name=skill.name, proficiency=skill.proficiency) for skill in request.skills],
+            skills=[
+                CandidateSkill(name=skill.name, proficiency=skill.proficiency)
+                for skill in request.skills
+            ],
             location=request.location,
             years_experience=request.years_experience,
         )
@@ -177,6 +186,11 @@ def build_job_with_enrichment_response(
 @lru_cache(maxsize=1)
 def get_registry() -> ServiceRegistry:
     settings = Settings.from_env()
+    raw_job_repository: RawJobRepository
+    job_repository: JobRepository
+    enrichment_repository: EnrichmentRepository
+    match_repository: MatchRepository
+    analytics_reader: AnalyticsReader
     if settings.database_url:
         from job_market.infrastructure.db.session import session_factory_from_url
         from job_market.infrastructure.repositories.sqlalchemy import (

@@ -166,7 +166,7 @@ See [terraform/README.md](terraform/README.md) for the infrastructure baseline.
 
 ## Known Limitations
 
-- full runtime dependencies are not installed in every development sandbox by default
+- running the full application requires Docker Compose or a local Python environment with PostgreSQL configured
 - metrics are process-local and reset on restart
 - no tracing backend is configured yet
 - current analytics scope is intentionally narrow and API-first

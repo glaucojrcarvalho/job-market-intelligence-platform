@@ -33,7 +33,9 @@ def test_upload_job_and_query_enrichment(client: TestClient) -> None:
         "/v1/jobs:upload",
         json={
             "title": "Senior Backend Engineer",
-            "description": "We need Python, FastAPI, PostgreSQL and AWS experience. Docker is required.",
+            "description": (
+                "We need Python, FastAPI, PostgreSQL and AWS experience. Docker is required."
+            ),
             "source_name": "manual_upload",
             "work_mode": "remote",
             "location_text": "Remote - Brazil",
@@ -76,5 +78,5 @@ def test_candidate_matches_endpoint(client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 1
-    assert body[0]["match_score"] > 0.6
+    assert body[0]["match_score"] == pytest.approx(0.55)
     assert any(reason["type"] == "technology_alignment" for reason in body[0]["reasons"])

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from typing import TypedDict
 
 from job_market.domain.candidates.models import CandidateProfile
 from job_market.domain.enrichment.models import (
@@ -18,7 +19,13 @@ from job_market.shared.text import normalize_whitespace, tokenize_words
 
 SENTENCE_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 
-SKILL_TAXONOMY = {
+
+class TaxonomyEntry(TypedDict):
+    aliases: tuple[str, ...]
+    category: str
+
+
+SKILL_TAXONOMY: dict[str, TaxonomyEntry] = {
     "python": {"aliases": ("python",), "category": "language"},
     "sql": {"aliases": ("sql", "postgresql", "mysql", "sql server"), "category": "query_language"},
     "aws": {"aliases": ("aws", "amazon web services"), "category": "cloud"},
@@ -36,7 +43,7 @@ SKILL_TAXONOMY = {
     "terraform": {"aliases": ("terraform",), "category": "infrastructure"},
 }
 
-TECHNOLOGY_TAXONOMY = {
+TECHNOLOGY_TAXONOMY: dict[str, TaxonomyEntry] = {
     "aws": {"aliases": ("aws", "amazon web services"), "category": "cloud"},
     "azure": {"aliases": ("azure", "microsoft azure"), "category": "cloud"},
     "gcp": {"aliases": ("gcp", "google cloud", "google cloud platform"), "category": "cloud"},
@@ -136,7 +143,11 @@ class HeuristicSummaryProvider:
     ) -> str | None:
         skill_names = ", ".join(skill.name for skill in skills[:4]) or "general engineering skills"
         technology_names = ", ".join(technology.name for technology in technologies[:3])
-        role_family = classification.role_family.replace("_", " ") if classification else "software engineering"
+        role_family = (
+            classification.role_family.replace("_", " ")
+            if classification
+            else "software engineering"
+        )
         seniority = classification.seniority.value if classification else "unknown"
 
         summary = f"{job.title} is a {seniority} {role_family} role emphasizing {skill_names}"
@@ -173,7 +184,10 @@ class OverlapMatchScorer:
         }
 
         for job in jobs:
-            enrichment = enrichment_by_job_id.get(job.job_id)
+            job_id = job.job_id
+            if job_id is None:
+                continue
+            enrichment = enrichment_by_job_id.get(job_id)
             if enrichment is None:
                 continue
             required_skills = {skill.name.lower() for skill in enrichment.skills}
@@ -193,15 +207,26 @@ class OverlapMatchScorer:
 
             base_score = len(matches) / len(required_skills)
             score = min(1.0, base_score + technology_bonus)
-            classification_text = (
-                f"{enrichment.classification.seniority.value} {enrichment.classification.role_family.replace('_', ' ')}"
-                if enrichment.classification
-                else "unclassified role"
+            if enrichment.classification:
+                seniority = enrichment.classification.seniority.value
+                role_family = enrichment.classification.role_family.replace("_", " ")
+                classification_text = f"{seniority} {role_family}"
+            else:
+                classification_text = "unclassified role"
+
+            matching_message = (
+                f"Matched {len(matches)} required skills for this {classification_text}."
             )
+            technology_alignment_message = "No direct technology alignment found."
+            if technology_hits:
+                aligned_technologies = ", ".join(technology_hits)
+                technology_alignment_message = (
+                    f"Candidate summary aligns with technologies: {aligned_technologies}."
+                )
 
             results.append(
                 MatchResult(
-                    job_id=job.job_id,
+                    job_id=job_id,
                     job_title=job.title,
                     source_name=job.source_name,
                     match_score=round(score, 3),
@@ -211,7 +236,7 @@ class OverlapMatchScorer:
                     reasons=[
                         MatchReason(
                             type="matching_skills",
-                            message=f"Matched {len(matches)} required skills for this {classification_text}.",
+                            message=matching_message,
                         ),
                         MatchReason(
                             type="missing_skills",
@@ -219,11 +244,7 @@ class OverlapMatchScorer:
                         ),
                         MatchReason(
                             type="technology_alignment",
-                            message=(
-                                f"Candidate summary aligns with technologies: {', '.join(technology_hits)}."
-                                if technology_hits
-                                else "No direct technology alignment found in the candidate summary."
-                            ),
+                            message=technology_alignment_message,
                         ),
                     ],
                 )
@@ -235,7 +256,7 @@ class OverlapMatchScorer:
 def _extract_taxonomy_terms(
     text: str,
     *,
-    taxonomy: dict[str, dict[str, object]],
+    taxonomy: dict[str, TaxonomyEntry],
 ) -> list[tuple[str, str | None, bool]]:
     normalized_text = normalize_whitespace(text)
     lowered_text = normalized_text.lower()
@@ -266,5 +287,12 @@ def _split_sentences(text: str) -> list[str]:
 
 def _is_requirement_sentence(sentence: str) -> bool:
     lowered = sentence.lower()
-    requirement_markers = ("required", "must", "need", "necessário", "obrigatório", "experience with")
+    requirement_markers = (
+        "required",
+        "must",
+        "need",
+        "necessário",
+        "obrigatório",
+        "experience with",
+    )
     return any(marker in lowered for marker in requirement_markers)

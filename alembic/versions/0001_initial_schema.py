@@ -7,9 +7,9 @@ Create Date: 2026-07-19 00:00:00
 
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "0001_initial_schema"
 down_revision = None
@@ -85,7 +85,9 @@ def upgrade() -> None:
         sa.Column("missing_skills", sa.JSON(), nullable=False),
         sa.Column("reasons", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(["candidate_profile_id"], ["candidate_profiles.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["candidate_profile_id"], ["candidate_profiles.id"], ondelete="SET NULL"
+        ),
         sa.ForeignKeyConstraint(["job_id"], ["jobs.id"], ondelete="SET NULL"),
     )
 

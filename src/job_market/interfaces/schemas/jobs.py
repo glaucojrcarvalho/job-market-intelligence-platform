@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
+
 from job_market.domain.jobs.models import WorkMode
 
 

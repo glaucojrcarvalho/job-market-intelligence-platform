@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request, status
 
 from job_market.domain.analytics.models import MetricBucket, SkillCooccurrence
@@ -25,6 +27,7 @@ from job_market.interfaces.schemas.system import (
 )
 
 router = APIRouter()
+RegistryDependency = Annotated[ServiceRegistry, Depends(get_registry)]
 
 
 @router.get("/health", response_model=HealthResponse, tags=["system"])
@@ -33,7 +36,7 @@ def health() -> HealthResponse:
 
 
 @router.get("/ready", response_model=ReadinessResponse, tags=["system"])
-def ready(registry: ServiceRegistry = Depends(get_registry)) -> ReadinessResponse:
+def ready(registry: RegistryDependency) -> ReadinessResponse:
     return ReadinessResponse(
         status="ok",
         checks={
@@ -44,7 +47,7 @@ def ready(registry: ServiceRegistry = Depends(get_registry)) -> ReadinessRespons
 
 
 @router.get("/version", response_model=VersionResponse, tags=["system"])
-def version(registry: ServiceRegistry = Depends(get_registry)) -> VersionResponse:
+def version(registry: RegistryDependency) -> VersionResponse:
     return VersionResponse(
         app_name=registry.settings.app_name,
         version=get_version(),
@@ -65,18 +68,18 @@ def metrics(request: Request) -> MetricsResponse:
 )
 def upload_job(
     request: ManualJobUploadRequest,
-    registry: ServiceRegistry = Depends(get_registry),
+    registry: RegistryDependency,
 ) -> JobWithEnrichmentResponse:
     return registry.upload_job(request)
 
 
 @router.get("/v1/jobs", response_model=list[JobResponse], tags=["jobs"])
-def list_jobs(registry: ServiceRegistry = Depends(get_registry)) -> list[JobResponse]:
+def list_jobs(registry: RegistryDependency) -> list[JobResponse]:
     return registry.list_jobs()
 
 
 @router.get("/v1/jobs/{job_id}", response_model=JobWithEnrichmentResponse, tags=["jobs"])
-def get_job(job_id: int, registry: ServiceRegistry = Depends(get_registry)) -> JobWithEnrichmentResponse:
+def get_job(job_id: int, registry: RegistryDependency) -> JobWithEnrichmentResponse:
     return registry.get_job(job_id)
 
 
@@ -85,7 +88,7 @@ def get_job(job_id: int, registry: ServiceRegistry = Depends(get_registry)) -> J
     response_model=list[MetricBucketResponse],
     tags=["analytics"],
 )
-def top_skills(registry: ServiceRegistry = Depends(get_registry)) -> list[MetricBucketResponse]:
+def top_skills(registry: RegistryDependency) -> list[MetricBucketResponse]:
     return [metric_bucket_to_response(item) for item in registry.analytics_service.top_skills()]
 
 
@@ -94,8 +97,12 @@ def top_skills(registry: ServiceRegistry = Depends(get_registry)) -> list[Metric
     response_model=list[MetricBucketResponse],
     tags=["analytics"],
 )
-def top_technologies(registry: ServiceRegistry = Depends(get_registry)) -> list[MetricBucketResponse]:
-    return [metric_bucket_to_response(item) for item in registry.analytics_service.top_technologies()]
+def top_technologies(
+    registry: RegistryDependency,
+) -> list[MetricBucketResponse]:
+    return [
+        metric_bucket_to_response(item) for item in registry.analytics_service.top_technologies()
+    ]
 
 
 @router.get(
@@ -104,11 +111,10 @@ def top_technologies(registry: ServiceRegistry = Depends(get_registry)) -> list[
     tags=["analytics"],
 )
 def skill_cooccurrence(
-    registry: ServiceRegistry = Depends(get_registry),
+    registry: RegistryDependency,
 ) -> list[SkillCooccurrenceResponse]:
     return [
-        cooccurrence_to_response(item)
-        for item in registry.analytics_service.skill_cooccurrence()
+        cooccurrence_to_response(item) for item in registry.analytics_service.skill_cooccurrence()
     ]
 
 
@@ -119,7 +125,7 @@ def skill_cooccurrence(
 )
 def candidate_matches(
     request: CandidateProfileRequest,
-    registry: ServiceRegistry = Depends(get_registry),
+    registry: RegistryDependency,
 ) -> list[MatchResult]:
     return [MatchResult.from_domain(result) for result in registry.match_candidate(request)]
 

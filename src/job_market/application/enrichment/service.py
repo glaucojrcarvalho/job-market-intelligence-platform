@@ -12,8 +12,6 @@ from job_market.application.ports import (
 from job_market.domain.enrichment.models import (
     JobClassification,
     JobEnrichment,
-    SkillEvidence,
-    TechnologyEvidence,
 )
 from job_market.domain.jobs.models import JobPosting, Seniority
 

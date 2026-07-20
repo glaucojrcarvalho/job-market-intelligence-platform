@@ -108,12 +108,16 @@ class SqlAlchemyEnrichmentRepository:
             raise ValueError("A persisted enrichment requires a job_id.")
 
         with self._session_factory() as session:
-            model = session.query(JobEnrichmentModel).filter_by(job_id=enrichment.job_id).one_or_none()
+            model = (
+                session.query(JobEnrichmentModel).filter_by(job_id=enrichment.job_id).one_or_none()
+            )
             if model is None:
                 model = JobEnrichmentModel(job_id=enrichment.job_id, skills=[], technologies=[])
                 session.add(model)
 
-            model.role_family = enrichment.classification.role_family if enrichment.classification else None
+            model.role_family = (
+                enrichment.classification.role_family if enrichment.classification else None
+            )
             model.seniority = (
                 enrichment.classification.seniority.value if enrichment.classification else None
             )
@@ -148,7 +152,9 @@ class SqlAlchemyEnrichmentRepository:
 
     def list_all(self) -> list[JobEnrichment]:
         with self._session_factory() as session:
-            models = session.query(JobEnrichmentModel).order_by(JobEnrichmentModel.job_id.asc()).all()
+            models = (
+                session.query(JobEnrichmentModel).order_by(JobEnrichmentModel.job_id.asc()).all()
+            )
             return [_to_job_enrichment(model) for model in models]
 
     def get_by_job_id(self, job_id: int) -> JobEnrichment | None:
@@ -172,7 +178,9 @@ class SqlAlchemyMatchRepository:
                 confidence=result.confidence,
                 matching_skills=result.matching_skills,
                 missing_skills=result.missing_skills,
-                reasons=[{"type": reason.type, "message": reason.message} for reason in result.reasons],
+                reasons=[
+                    {"type": reason.type, "message": reason.message} for reason in result.reasons
+                ],
                 created_at=datetime.now(UTC),
             )
             session.add(model)
@@ -191,14 +199,14 @@ class SqlAlchemyAnalyticsReader:
         self._session_factory = session_factory
 
     def top_skills(self) -> list[MetricBucket]:
-        counter = Counter()
+        counter: Counter[str] = Counter()
         with self._session_factory() as session:
             for enrichment in session.query(JobEnrichmentModel).all():
                 counter.update(skill["name"] for skill in enrichment.skills)
         return [MetricBucket(label=label, value=value) for label, value in counter.most_common()]
 
     def top_technologies(self) -> list[MetricBucket]:
-        counter = Counter()
+        counter: Counter[str] = Counter()
         with self._session_factory() as session:
             for enrichment in session.query(JobEnrichmentModel).all():
                 counter.update(technology["name"] for technology in enrichment.technologies)
@@ -291,7 +299,6 @@ def _to_match_result(model: CandidateMatchModel) -> MatchResult:
         missing_skills=list(model.missing_skills),
         confidence=model.confidence,
         reasons=[
-            MatchReason(type=reason["type"], message=reason["message"])
-            for reason in model.reasons
+            MatchReason(type=reason["type"], message=reason["message"]) for reason in model.reasons
         ],
     )

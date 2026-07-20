@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from job_market.domain.candidates.models import CandidateProfile, CandidateSkill
-from job_market.domain.enrichment.models import JobClassification, JobEnrichment, SkillEvidence, TechnologyEvidence
+from job_market.domain.enrichment.models import (
+    JobClassification,
+    JobEnrichment,
+    SkillEvidence,
+    TechnologyEvidence,
+)
 from job_market.domain.jobs.models import JobPosting, Seniority
 from job_market.infrastructure.ai.deterministic import (
     HeuristicRoleClassifier,
