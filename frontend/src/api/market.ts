@@ -1,13 +1,7 @@
 import { requestJson } from './client'
+import { listJobs } from './jobs'
 
-export type JobSummary = {
-  job_id: number
-  title: string
-  source_name: string
-  work_mode: string
-  location_text: string | null
-  salary_text: string | null
-}
+export type { JobSummary } from './jobs'
 
 export type MetricBucket = {
   label: string
@@ -21,7 +15,7 @@ export type SkillCooccurrence = {
 }
 
 export function getJobs(signal?: AbortSignal) {
-  return requestJson<JobSummary[]>('/v1/jobs', { signal })
+  return listJobs({}, signal)
 }
 
 export function getTopSkills(signal?: AbortSignal) {
