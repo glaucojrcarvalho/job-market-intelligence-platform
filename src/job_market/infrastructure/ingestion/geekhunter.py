@@ -1,4 +1,4 @@
-"""Source-specific parser for the original GeekHunter notebook flow."""
+"""Unsupported legacy parser for the original GeekHunter notebook flow."""
 
 from __future__ import annotations
 
@@ -11,12 +11,19 @@ from job_market.shared.text import normalize_whitespace
 
 
 class GeekHunterHtmlAdapter:
-    """Convert scraped GeekHunter job-card HTML into raw source records."""
+    """Parse preserved GeekHunter HTML fixtures without retrieving live data.
+
+    The adapter exists to preserve Version 1 parsing provenance. It is not an
+    operational V2 connector: historical selectors are unvalidated and live
+    retrieval requires written source authorization before reimplementation.
+    """
 
     source_name = "geekhunter"
 
     def fetch(self) -> list[RawJobRecord]:
-        raise NotImplementedError("Live fetching remains in the exploratory notebook for now.")
+        raise NotImplementedError(
+            "Live GeekHunter ingestion is unsupported; use only authorized source integrations."
+        )
 
     def parse_job_card(self, job_html: str, *, source_url: str | None = None) -> RawJobRecord:
         soup = BeautifulSoup(job_html, "html.parser")

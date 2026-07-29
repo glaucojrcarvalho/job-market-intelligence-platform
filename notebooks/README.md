@@ -23,9 +23,14 @@ It is not the production application.
 - The notebook was originally executed with Python `3.7.6`.
 - Install a Chrome browser and compatible ChromeDriver through the operating system, container image, or an automated driver manager before running the scraping cells.
 - The notebook reflects the original exploratory workflow and historical source assumptions; it is not exercised by CI.
-- Review the target site's current terms and selectors before running the scraper.
+- Do not run the historical GeekHunter scraper without prior written authorization.
+  [GeekHunter's current terms](https://www.geekhunter.com.br/pt/termos-de-uso) prohibit automated
+  scraping or crawler tools without that authorization.
+- The historical selectors and Selenium APIs are unvalidated and may no longer work.
 
 ## Boundary With Production Code
 
 - exploratory helpers in this directory are not imported by the application
 - production ingestion, normalization, enrichment, analytics, and API code lives under `src/`
+- the production GeekHunter parser is retained for provenance and fixture-based parsing only; live
+  GeekHunter retrieval is unsupported
