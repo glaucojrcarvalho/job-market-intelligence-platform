@@ -1,565 +1,196 @@
 # Architecture
 
-## Document Status
+## Status and scope
 
-- Status: Active
-- Date: July 19, 2026
-- Product: Job Market Intelligence Platform
+- Product: Software Engineering Market Intelligence Platform
+- Style: modular monolith
+- Current release: Version 2 backend foundation
+- Deployment status: local runtime supported; no verified public deployment
 
-## 1. Architecture Goals
+This document separates the code that exists from the target ingestion lifecycle. Dashed or
+explicitly planned elements must not be read as deployed services.
 
-The architecture must support the MVP defined in the PRD while keeping the system simple enough to implement incrementally from the existing notebook foundation.
+## Product lineage
 
-The design goals are:
+Version 1 is the preserved GeekHunter-based exploratory notebook under `notebooks/`. Version 2
+adds a typed application and infrastructure foundation without rewriting that history. See
+[ADR 0005](adr/0005-evolve-to-multi-source-market-intelligence.md).
 
-- separate exploration from production code
-- support one source first, but allow additional adapters later
-- keep deterministic enrichment and analytics explainable
-- preserve clear service boundaries without over-distributing the system
-- make the platform easy to test, run locally, and deploy
-
-## 2. Repository Structure
-
-```text
-job-market-intelligence-platform/
-├── apps/
-│   └── api/
-│       └── main.py
-├── docs/
-│   ├── 00-product-vision.md
-│   ├── 02-prd.md
-│   ├── 03-architecture.md
-│   ├── 04-roadmap.md
-│   ├── 05-operational-runbook.md
-│   ├── 06-local-development.md
-│   ├── 07-api-examples.md
-│   ├── 08-deployment-guide.md
-│   └── adr/
-├── notebooks/
-│   └── exploratory-job-market-analysis.ipynb
-├── src/
-│   └── job_market/
-│       ├── domain/
-│       │   ├── jobs/
-│       │   ├── candidates/
-│       │   ├── enrichment/
-│       │   └── analytics/
-│       ├── application/
-│       │   ├── ingestion/
-│       │   ├── normalization/
-│       │   ├── enrichment/
-│       │   ├── matching/
-│       │   └── analytics/
-│       ├── infrastructure/
-│       │   ├── db/
-│       │   ├── repositories/
-│       │   ├── ingestion/
-│       │   ├── ai/
-│       │   └── observability/
-│       ├── interfaces/
-│       │   ├── api/
-│       │   └── schemas/
-│       ├── config/
-│       └── shared/
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── api/
-├── alembic/
-├── scripts/
-├── docker/
-├── terraform/
-├── pyproject.toml
-├── README.md
-└── .github/
-    └── workflows/
-```
-
-## 3. Architectural Style
-
-The architecture is a modular monolith with clear internal boundaries.
-
-This means:
-
-- one deployable backend service for the MVP
-- distinct domain and application modules
-- infrastructure isolated behind interfaces
-- no premature microservice split
-
-This trade-off keeps deployment and local operation simple while the domain and load profile evolve. Internal module boundaries preserve a path to extracting services if scaling or organizational needs justify it.
-
-## 4. High-Level System Components
+## Current architecture
 
 ```mermaid
 flowchart LR
-    A[Source Adapters] --> B[Ingestion Services]
-    U[Manual Job Upload API] --> B
-    B --> C[Raw Job Store]
-    B --> D[Normalization Services]
-    D --> E[Normalized Job Store]
-    E --> F[Enrichment Services]
-    F --> G[Enriched Read Models]
-    E --> H[Analytics Services]
-    G --> H
-    P[Candidate Profile API] --> I[Candidate Matching Services]
-    G --> I
-    I --> J[Match Results Store]
-    H --> K[FastAPI Read Endpoints]
-    I --> K
-    E --> K
-    C --> K
+    Client[API client] --> Upload[Manual upload endpoint]
+    Upload --> Raw[Raw record repository]
+    Upload --> Normalize[Normalization service]
+    Normalize --> Jobs[Job repository]
+    Jobs --> Enrich[Deterministic enrichment]
+    Enrich --> Enriched[Enrichment repository]
+    Jobs --> API[Job API]
+    Enriched --> Analytics[Analytics API]
+    Jobs --> Match[Candidate matching]
+    Enriched --> Match
 ```
 
-## 5. Logical Layers
+Implemented behavior:
 
-### Domain Layer
+- one FastAPI deployable with domain, application, infrastructure, and interface layers
+- synchronous manual upload, normalization, persistence, enrichment, analytics, and matching
+- in-memory repositories or SQLAlchemy/PostgreSQL repositories
+- raw records stored separately from normalized jobs
+- a `SourceAdapter` protocol that returns raw records
+- a preserved GeekHunter HTML parser with no live retrieval implementation
 
-Contains core business concepts and invariants:
+Not implemented:
 
-- job posting
-- raw source record
-- normalized location
-- normalized compensation
-- role family
-- seniority
-- skill
-- technology
-- candidate profile
-- job match result
+- an operational external source connector
+- scheduled or batch ingestion
+- deduplication, idempotent upsert, or update detection
+- retry orchestration, rate limiting, source-health metrics, or stale-job expiration
+- public frontend or verified production environment
 
-This layer should not depend on FastAPI, SQLAlchemy, or external AI providers.
-
-### Application Layer
-
-Contains use cases and orchestration:
-
-- ingest jobs
-- normalize jobs
-- enrich jobs
-- analyze market data
-- evaluate candidate matches
-
-This layer coordinates domain logic and repository interfaces.
-
-### Infrastructure Layer
-
-Contains implementation details:
-
-- database access
-- SQLAlchemy models
-- Alembic migrations
-- source adapters
-- AI provider clients
-- logging and metrics integration
-
-### Interface Layer
-
-Contains external contracts:
-
-- FastAPI routers
-- Pydantic request and response schemas
-- dependency wiring
-- error translation
-
-## 6. Component Responsibilities
-
-### Ingestion
-
-Responsibilities:
-
-- fetch or accept job payloads
-- preserve raw source data
-- attach source metadata
-- deduplicate records
-- hand off accepted records for normalization
-
-Initial implementations:
-
-- source adapter for the current GeekHunter-style flow
-- manual upload endpoint for testing and controlled ingestion
-
-### Normalization
-
-Responsibilities:
-
-- normalize title, location, work mode, and compensation
-- clean and standardize job description text
-- map synonyms into canonical values
-- prepare records for deterministic enrichment
-
-### Enrichment
-
-Responsibilities:
-
-- extract skills
-- detect frameworks, databases, and cloud providers
-- classify role family
-- classify seniority
-- produce evidence snippets and confidence where justified
-
-### Analytics
-
-Responsibilities:
-
-- aggregate job demand across dimensions
-- compute skill frequency
-- compute skill co-occurrence
-- support filters by location, seniority, role family, source, and work mode
-
-### Candidate Matching
-
-Responsibilities:
-
-- parse candidate input into normalized profile attributes
-- compare candidate skills with enriched job requirements
-- compute match score
-- identify matching and missing skills
-- provide evidence-backed explanations
-
-## 7. Data Flow
-
-### 7.1 Job Ingestion Flow
+## Target multi-source ingestion flow
 
 ```mermaid
-sequenceDiagram
-    participant Source as Source Adapter or API Client
-    participant API as FastAPI Ingestion Endpoint
-    participant Ingest as Ingestion Service
-    participant RawRepo as Raw Job Repository
-    participant Norm as Normalization Service
-    participant JobRepo as Job Repository
-    participant Enrich as Enrichment Service
-    participant EnrichRepo as Enrichment Repository
-
-    Source->>API: Submit job payloads
-    API->>Ingest: Validated ingestion request
-    Ingest->>RawRepo: Persist raw source record
-    Ingest->>Norm: Normalize raw job
-    Norm->>JobRepo: Persist normalized job
-    JobRepo->>Enrich: Trigger enrichment
-    Enrich->>EnrichRepo: Persist extracted attributes
+flowchart LR
+    Connector[Supported source connector] --> RawRecord[Raw source record]
+    RawRecord --> Validate[Source validation and mapping]
+    Validate --> Normalize[Canonical normalization]
+    Normalize --> Dedupe[Deduplication and update detection]
+    Dedupe --> Persist[Raw and normalized persistence]
+    Persist --> Enrich[Deterministic enrichment]
+    Enrich --> Consumers[API, job discovery, analytics, matching]
 ```
 
-### 7.2 Candidate Matching Flow
+This is a target architecture. It describes the next connector’s contract and lifecycle; it does
+not imply that Greenhouse, Lever, Ashby, remote-job feeds, or company career-page connectors exist.
 
-```mermaid
-sequenceDiagram
-    participant Client as API Client
-    participant API as FastAPI Candidate Endpoint
-    participant Match as Matching Service
-    participant JobRead as Enriched Job Read Model
-    participant MatchRepo as Match Repository
+## Source isolation
 
-    Client->>API: Submit candidate profile or CV-derived payload
-    API->>Match: Validated candidate request
-    Match->>JobRead: Load relevant enriched jobs
-    Match->>Match: Score and explain matches
-    Match->>MatchRepo: Persist results
-    MatchRepo-->>API: Match results
-    API-->>Client: Ranked matches with evidence
-```
+A source connector owns:
 
-## 8. API Boundaries
+- retrieving records through a permitted public API, feed, or company-hosted endpoint
+- validating source-required fields and recording recoverable validation failures
+- mapping source-specific fields into `RawJobRecord` and a canonical `JobPosting`
+- preserving opaque source metadata only when it is needed for traceability or reprocessing
 
-The backend should remain API-first. Proposed first resource groups:
+Source-specific field names, HTML selectors, authentication, pagination, and rate-limit behavior
+belong in the infrastructure adapter. Application services, domain models, repositories, and
+public API responses must not depend on a provider’s schema.
 
-### System Endpoints
+The existing `SourceAdapter.fetch()` protocol is a minimal seam, not a complete connector
+framework. Extend it only while implementing a validated source, when retrieval, validation, and
+mapping semantics are known. Do not add empty adapters for possible providers.
 
-- `GET /health`
-- `GET /ready`
-- `GET /version`
+## Normalized domain and provenance
 
-### Ingestion Endpoints
+The current model records:
 
-- `POST /v1/jobs:ingest`
-- `POST /v1/jobs:upload`
-- `GET /v1/ingestions/{ingestion_id}`
+| Requirement | Current representation |
+| --- | --- |
+| Source name | `RawJobRecord.source_name` and `JobPosting.source_name` |
+| Source job identifier | `RawJobRecord.source_job_id` |
+| Original URL | `source_url` on raw and normalized records |
+| Company | `JobPosting.company_name` |
+| Retrieval/observation time | `RawJobRecord.observed_at` |
+| Publication time | `JobPosting.posted_at` |
+| Raw source content | `RawJobRecord.payload` |
+| Raw-to-normalized linkage | `JobPosting.raw_record_id` |
 
-### Job Endpoints
+The model does not yet record `last_observed_at`, structured source metadata, or a normalization
+version. These should be added together with the first operational connector and its upsert
+semantics. Deferring them avoids a speculative schema that cannot yet define which observations
+represent the same job. Any addition requires an Alembic migration, domain and repository updates,
+tests, documentation, and a backward-compatible default or backfill strategy.
 
-- `GET /v1/jobs`
-- `GET /v1/jobs/{job_id}`
-- `GET /v1/jobs/{job_id}/enrichment`
+## Idempotency, deduplication, and updates
 
-### Analytics Endpoints
+Current uploads always insert new raw and normalized records. Repeating a request creates a
+duplicate.
 
-- `GET /v1/analytics/skills/top`
-- `GET /v1/analytics/technologies/top`
-- `GET /v1/analytics/locations/demand`
-- `GET /v1/analytics/seniority/demand`
-- `GET /v1/analytics/work-modes/distribution`
-- `GET /v1/analytics/skills/cooccurrence`
+The target strategy is:
 
-### Candidate Endpoints
+1. Prefer the stable pair `(source_name, source_job_id)` when a source guarantees identifier
+   stability.
+2. Fall back only to a documented deterministic fingerprint of stable canonical fields when a
+   source has no identifier.
+3. Store every materially new observation or retain an auditable hash, while upserting the
+   canonical job.
+4. Update `last_observed_at` on repeat observations.
+5. Re-normalize only when the payload hash or normalization version changes.
 
-- `POST /v1/candidates/matches`
-- `POST /v1/candidates/profile:analyze`
-- `GET /v1/candidate-matches/{match_id}`
+The database uniqueness rule must be chosen from real source behavior. URL alone is not assumed
+stable, and cross-source deduplication is deferred until false-merge risks can be evaluated.
 
-### Admin-Oriented Internal Endpoints
+## Failure and retry boundaries
 
-- `POST /internal/v1/enrichment/rebuild`
-- `POST /internal/v1/analytics/recompute`
+For the planned connector lifecycle:
 
-These internal endpoints should be gated or excluded from public exposure in production.
+- retrieval failures: retry outside domain normalization with bounded exponential backoff and
+  jitter; honor provider `Retry-After` guidance
+- authentication or authorization failures: do not retry indefinitely; disable the run and alert
+- source validation failures: quarantine the individual record and continue the bounded run
+- normalization failures: retain raw provenance, record the version and error, and permit replay
+- persistence failures: roll back the record transaction and retry only transient database errors
+- enrichment failures: keep the normalized job and retry enrichment independently
 
-## 9. Suggested Request and Response Shape
+Rate limits are connector-specific configuration. Connectors must use documented endpoints,
+identify themselves where required, avoid bypassing access controls, and respect terms, robots
+directives where applicable, pagination constraints, and request quotas.
 
-The public contract should distinguish:
+## Observability requirements
 
-- write models for ingestion and candidate input
-- read models for enriched jobs and analytics
-- operational models for job runs, health, and status
+Current structured request logs and process-local API metrics do not cover ingestion runs. Before
+scheduled ingestion, add:
 
-Principles:
+- run and source identifiers in logs
+- retrieved, accepted, rejected, inserted, updated, unchanged, and expired counts
+- latency and error metrics by connector and pipeline stage
+- last-success time and consecutive-failure source health
+- alerts for authorization failures, sustained failure rates, and stale source data
 
-- use Pydantic models for all API boundaries
-- expose normalized fields explicitly
-- keep raw source data out of default public job responses
-- expose evidence and confidence for AI-derived outputs
+Raw payloads and candidate data must not be emitted into routine logs.
 
-## 10. Database Design
+## Stale jobs, deletion, and retention
 
-PostgreSQL is the recommended primary data store for the MVP.
+There is no current expiration workflow. The target policy is source-aware:
 
-### Core Tables
+- mark a job inactive after a configured number of missed successful observations
+- distinguish source absence from connector failure; failed runs must not expire records
+- retain minimum provenance required for audit and reprocessing
+- define deletion windows for raw payloads and candidate data
+- provide deletion workflows for personal data before candidate profiles become persistent product
+  accounts
 
-#### `source_ingestions`
+Hard deletion should be reserved for explicit retention or legal requirements. Exact windows
+remain a product, legal, and operational decision.
 
-- `id`
-- `source_name`
-- `source_type`
-- `trigger_type`
-- `status`
-- `started_at`
-- `completed_at`
-- `error_message`
+## API and consumer boundaries
 
-#### `raw_job_records`
+Implemented endpoints:
 
-- `id`
-- `ingestion_id`
-- `source_job_id`
-- `source_url`
-- `raw_payload`
-- `payload_hash`
-- `observed_at`
-
-#### `jobs`
-
-- `id`
-- `raw_job_record_id`
-- `canonical_title`
-- `company_name`
-- `description_text`
-- `work_mode`
-- `employment_type`
-- `location_text`
-- `location_country`
-- `location_region`
-- `location_city`
-- `salary_currency`
-- `salary_min`
-- `salary_max`
-- `posted_at`
-- `status`
+- system: `/health`, `/ready`, `/version`, `/metrics`
+- jobs: manual upload, list, and detail
+- analytics: top skills, top technologies, and skill co-occurrence
+- matching: request-scoped candidate-to-job matches
 
-#### `job_skills`
-
-- `job_id`
-- `skill_id`
-- `evidence_text`
-- `confidence`
-- `is_required`
+Generated OpenAPI documentation is available at `/docs` when the API runs. Planned job explorer,
+dashboard, additional filters, ingestion administration, user accounts, and AI-assisted insights
+are consumers of the normalized model, not implemented services.
 
-#### `skills`
+## Deployment topology
 
-- `id`
-- `canonical_name`
-- `category`
-- `normalized_slug`
+Docker Compose provides a local API and PostgreSQL stack. Terraform describes an AWS baseline with
+ECS Fargate, RDS PostgreSQL, an ALB, Secrets Manager, and CloudWatch logs, but the repository
+contains no evidence that it has been applied. HTTPS, remote state, environment separation,
+backups, secret rotation, deployment rollback, and production monitoring require completion
+before calling the system production-ready.
 
-#### `job_technologies`
+## Evolution rules
 
-- `job_id`
-- `technology_id`
-- `evidence_text`
-- `confidence`
-
-#### `technologies`
-
-- `id`
-- `canonical_name`
-- `technology_type`
-- `normalized_slug`
-
-#### `job_classifications`
-
-- `job_id`
-- `role_family`
-- `seniority`
-- `confidence`
-- `evidence_text`
-
-#### `candidate_profiles`
-
-- `id`
-- `external_ref`
-- `summary_text`
-- `location_text`
-- `years_experience`
-- `created_at`
-
-#### `candidate_skills`
-
-- `candidate_profile_id`
-- `skill_id`
-- `proficiency`
-- `evidence_text`
-
-#### `candidate_matches`
-
-- `id`
-- `candidate_profile_id`
-- `job_id`
-- `match_score`
-- `confidence`
-- `matching_skills_count`
-- `missing_skills_count`
-- `created_at`
-
-#### `candidate_match_reasons`
-
-- `id`
-- `candidate_match_id`
-- `reason_type`
-- `reason_text`
-- `evidence_text`
-
-### Storage Principles
-
-- store raw records separately from normalized records
-- avoid coupling API schemas directly to table schemas
-- use relational tables for structured enrichment outputs
-- reserve JSONB for flexible source payloads and limited metadata
-
-## 11. Read Model Strategy
-
-The MVP should keep writes normalized and reads simple.
-
-Recommended approach:
-
-- normalized tables for source-of-truth entities
-- SQL views or application-level projections for analytics reads
-- optional materialized views later for heavier aggregate queries
-
-Avoid introducing a separate warehouse or search engine in the first implementation unless actual query requirements force it.
-
-## 12. AI Architecture
-
-### Deterministic First
-
-The first enrichment pipeline should prefer:
-
-- controlled vocabularies
-- regex and token-based extraction
-- heuristic classifiers
-- dictionary-based normalization
-
-### Optional LLM Layer
-
-If LLM features are added later, they should sit behind an interface such as:
-
-- `SummaryProvider`
-- `CandidateParsingProvider`
-- `ExplanationProvider`
-
-Rules:
-
-- never make LLM usage mandatory for core ingestion
-- persist LLM outputs separately from deterministic facts
-- track provider, prompt version, and confidence metadata
-
-## 13. Background Processing Strategy
-
-The MVP can start synchronously for low-volume ingestion and matching requests, with a clean seam for asynchronous execution.
-
-Recommended path:
-
-- synchronous API-triggered ingestion for initial development
-- service abstractions that can later move to a queue-backed worker
-- asynchronous execution added when import volume or latency justifies it
-
-This keeps implementation simpler while preserving a migration path.
-
-## 14. Security And Compliance Considerations
-
-- validate and sanitize all API inputs
-- treat uploaded CVs and candidate data as sensitive
-- avoid logging raw candidate documents or full raw job payloads at info level
-- manage secrets through environment variables or a secret manager in cloud deployment
-- enforce least-privilege access for database and cloud resources
-- review target source terms of use before enabling scheduled scraping
-
-## 15. Observability Design
-
-The service should emit:
-
-- structured application logs
-- request correlation IDs
-- ingestion job lifecycle events
-- enrichment error metrics
-- health and readiness states
-
-Recommended early metrics:
-
-- jobs ingested per run
-- normalization failure count
-- enrichment failure count
-- candidate match latency
-- API error rate by route
-
-## 16. Deployment Topology
-
-### Local Development
-
-- FastAPI app container
-- PostgreSQL container
-- optional worker container later
-
-### Initial AWS Target
-
-- containerized API service
-- PostgreSQL on RDS
-- secrets in AWS Secrets Manager or SSM Parameter Store
-- object storage for raw artifacts if needed
-- CloudWatch for logs and metrics
-
-The Terraform configuration implements this topology as the initial AWS deployment target.
-
-## 17. Trade-Off Summary
-
-### Chosen Trade-Offs
-
-- modular monolith over microservices
-- PostgreSQL first over multi-store architecture
-- deterministic NLP first over LLM-first enrichment
-- API-first backend over frontend-first delivery
-- source adapter abstraction over hardcoded notebook scraping logic
-
-### Deferred Complexity
-
-- distributed task queues
-- vector databases
-- event buses
-- warehouse-style analytics stack
-- full semantic retrieval
-- broad multi-source scraping
-
-## 18. Evolution Guidelines
-
-- Keep source ingestion behind adapter and application-service boundaries.
-- Define public API schemas independently from persistence models.
-- Evolve SQLAlchemy models from the canonical domain rather than notebook columns.
-- Keep exploratory notebook code and outputs outside the application runtime.
-- Record material architectural changes as ADRs.
+- Keep Version 1 assets intact and outside the production runtime.
+- Add one authorized, tested connector before generalizing the adapter contract.
+- Keep source schemas out of domain, service, and public API layers.
+- Pair every schema change with a migration, tests, documentation, and compatibility notes.
+- Prefer a deployed, usable vertical slice over broad internal refactoring.
+- Record material decisions as ADRs.
