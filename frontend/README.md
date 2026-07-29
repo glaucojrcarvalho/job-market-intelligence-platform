@@ -28,12 +28,13 @@ Start the development server:
 npm run dev
 ```
 
-The frontend runs at `http://localhost:3000` by default. The API base URL defaults to
-`http://localhost:8000` and can be changed with `VITE_API_BASE_URL`.
+The frontend runs at `http://localhost:3000` by default. The API base URL defaults to `/api`,
+which the Vite development server proxies to `http://localhost:8000`. It can be changed with
+`VITE_API_BASE_URL`. If the local API uses a different origin, configure `API_PROXY_TARGET`.
 
-The backend does not yet configure CORS. Cross-origin API requests from the standalone frontend
-will be enabled in the later Docker Compose integration task. The foundation routes do not issue
-API requests.
+The local proxy lets the standalone dashboard use the API without broadening backend CORS.
+Production API routing and environment-scoped CORS will be finalized in the later Docker Compose
+integration task.
 
 ## Scripts
 
@@ -52,7 +53,7 @@ quality task.
 | Route | Current state |
 | --- | --- |
 | `/` | Product overview and developer access |
-| `/market` | Foundation placeholder for the market dashboard |
+| `/market` | API-backed market dashboard |
 | `/jobs` | Foundation placeholder for the job explorer |
 | `/match` | Foundation placeholder for candidate matching |
 
