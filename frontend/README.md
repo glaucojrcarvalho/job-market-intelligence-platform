@@ -54,8 +54,8 @@ quality task.
 | --- | --- |
 | `/` | Product overview and developer access |
 | `/market` | API-backed market dashboard |
-| `/jobs` | Foundation placeholder for the job explorer |
+| `/jobs` | API-backed bounded job explorer with details |
 | `/match` | Foundation placeholder for candidate matching |
 
-The placeholder routes define navigation and page boundaries without claiming that later product
-features are implemented.
+The remaining placeholder route defines its navigation and page boundary without claiming that
+candidate matching is implemented.
