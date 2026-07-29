@@ -14,9 +14,9 @@ without redesigning the backend. It must help a visitor understand the platform,
 stored in the running instance, explore supported analytics, browse jobs, and try deterministic
 candidate matching.
 
-This phase does not make the platform a live labor-market feed. The current production path
-accepts manually uploaded jobs, and no authorized external connector or scheduled ingestion is
-operational. Every product page must keep that limitation visible.
+This phase does not make the platform a live labor-market feed. The current implemented ingestion
+path accepts manually uploaded jobs, and no authorized external connector or scheduled ingestion
+is operational. Every product page must keep that limitation visible.
 
 ## Product principles
 
