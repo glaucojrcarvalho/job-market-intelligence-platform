@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   getJob,
@@ -76,12 +76,22 @@ function JobDetailPanel({
     [jobId],
   )
   const detail = useApiResource(load)
+  const detailRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (detail.state.status === 'success') {
+      detailRef.current?.focus()
+    }
+  }, [detail.state.status])
 
   return (
     <section
       className="job-detail-shell"
       id={`job-detail-${jobId}`}
       aria-labelledby={`job-detail-title-${jobId}`}
+      aria-live="polite"
+      ref={detailRef}
+      tabIndex={-1}
     >
       <div className="job-detail-toolbar">
         <p>Selected job details</p>
@@ -249,7 +259,7 @@ function JobCard({
         aria-controls={selected ? `job-detail-${job.job_id}` : undefined}
         onClick={onSelect}
       >
-        {selected ? 'Details selected' : 'View details'}
+        {selected ? 'Hide details' : 'View details'}
         <span aria-hidden="true">→</span>
       </button>
     </article>
@@ -340,7 +350,11 @@ export function JobExplorerPage() {
                   <JobCard
                     job={job}
                     selected={selectedJobId === job.job_id}
-                    onSelect={() => setSelectedJobId(job.job_id)}
+                    onSelect={() =>
+                      setSelectedJobId((current) =>
+                        current === job.job_id ? null : job.job_id,
+                      )
+                    }
                     key={job.job_id}
                   />
                 ))}
