@@ -101,6 +101,9 @@ Candidate profiles use bounded structured input:
 - optional location: 1 to 255 characters
 - optional years of experience: 0 to 80
 
+Skill names are deduplicated case-insensitively after trimming. When duplicates provide different
+proficiency values, the first entry is retained.
+
 The endpoint does not accept CV files or require names, email addresses, or contact details.
 
 ## Expected Response Characteristics
