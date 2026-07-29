@@ -1,173 +1,153 @@
-# Job Market Intelligence Platform
+# Software Engineering Market Intelligence Platform
 
-Job Market Intelligence Platform is a backend-first system that transforms raw software and data job postings into structured market intelligence.
+A backend-first platform for understanding the software-engineering labor market through
+normalized job data, analytics, job discovery, and explainable candidate matching.
 
-The platform includes a modular Python package, FastAPI API surface, deterministic enrichment, PostgreSQL persistence, containerization, CI/CD workflows, AWS infrastructure definitions, and observability foundations. An exploratory notebook is retained separately from the application runtime.
+The project is for engineers exploring market demand, recruiters and hiring managers comparing
+role requirements, and contributors building reliable labor-market data products.
 
-## Product Scope
+> **Status:** Version 2 is under active development. The API, manual job ingestion, deterministic
+> enrichment, analytics, and matching workflows run locally. No external job-source connector,
+> scheduled ingestion, public web interface, production deployment, or live demo is currently
+> verified.
 
-The platform is designed to answer questions such as:
+## What works today
 
-- which skills and technologies are most requested
-- which skills appear together
-- how requirements differ by seniority
-- which jobs best match a candidate profile
-- why a candidate is or is not a strong fit
+- FastAPI endpoints for health, readiness, process-local metrics, jobs, analytics, and matching
+- typed manual job upload with separate raw and normalized persistence
+- deterministic skill and technology extraction, role and seniority classification, and summaries
+- explainable, deterministic candidate-to-job matching
+- PostgreSQL persistence with SQLAlchemy and Alembic, plus an in-memory local/test mode
+- Docker and Docker Compose development support
+- CI checks for Ruff, formatting, mypy, pytest, compileall, and image builds
+- an unprovisioned Terraform baseline for an AWS ECS, RDS, ALB, and CloudWatch topology
 
-## Current Capabilities
+The API is currently a product foundation, not a complete public market-data product. In
+particular, analytics operate only on records submitted to the running instance.
 
-- FastAPI application with health, readiness, metrics, jobs, analytics, and candidate match endpoints
-- deterministic job enrichment with skill extraction, technology detection, role-family classification, seniority heuristics, and job summaries
-- PostgreSQL-ready persistence with SQLAlchemy and Alembic
-- in-memory fallback mode when `DATABASE_URL` is not configured
-- Docker and Docker Compose for local runtime
-- Terraform baseline for AWS deployment
-- GitHub Actions for linting, type checks, tests, and Docker build validation
-- structured JSON logging and lightweight in-process metrics
+## Project evolution
 
-## Repository Layout
+### Version 1 — Single-source market analysis
 
-```text
-apps/         Application entrypoints
-docs/         Product, architecture, roadmap, and operational docs
-notebooks/    Preserved exploratory notebook assets
-src/          Production Python package
-tests/        Unit and API tests
-alembic/      Database migration scripts
-docker/       Container runtime notes
-terraform/    AWS infrastructure baseline
-```
+The project began as a data science and market-analysis initiative based on job data from
+GeekHunter. Its original notebook explored technology demand, job characteristics, salary
+disclosure, and software-engineering market patterns. That work remains preserved under
+[`notebooks/`](notebooks/) as the historical and analytical foundation of the product.
 
-## Core Documents
+### Version 2 — Multi-source market intelligence platform
 
-- [Product Vision](docs/00-product-vision.md)
-- [PRD](docs/02-prd.md)
-- [Architecture](docs/03-architecture.md)
-- [Roadmap](docs/04-roadmap.md)
-- [Operational Runbook](docs/05-operational-runbook.md)
+The project is now evolving incrementally into a production-oriented Software Engineering Market
+Intelligence Platform. The target product will ingest normalized job data from multiple supported
+and authorized sources, then provide market analytics, job discovery, candidate matching, and
+future AI-assisted career insights.
 
-## Local Development
+Version 2 does not erase Version 1 or claim that its historical scraper is a current connector.
+GeekHunter live ingestion is not supported: the preserved parser has no live retrieval
+implementation, is not exercised by CI against the site, and must not be operationalized without
+written authorization and revalidation.
 
-### Option 1: Docker Compose
+## Implemented and planned capabilities
+
+| Area | Implemented now | Planned |
+| --- | --- | --- |
+| Ingestion | Manual API upload; raw and normalized record storage; basic source provenance | Authorized external connectors, scheduling, retries, source health, deduplication, update detection |
+| Intelligence | Deterministic enrichment and summaries; aggregate skill/technology analytics | Salary and time-series trends, richer filters, durable analytical views |
+| Product | REST API and generated OpenAPI docs; deterministic candidate matching | Public landing page, job explorer, market dashboard, candidate profiles, ranked explanations |
+| Operations | Local containers, CI, structured logs, process-local metrics, Terraform baseline | Production deployment, live demo, monitoring, alerting, backups, retention workflows |
+| AI | No LLM dependency; deterministic heuristics only | Grounded career insights and natural-language market queries with evaluation and guardrails |
+
+See the evidence-based status in the [roadmap](docs/04-roadmap.md) and the current-versus-target
+boundaries in the [architecture](docs/03-architecture.md).
+
+## Run locally
+
+### Docker Compose
 
 ```bash
 docker compose up --build
 ```
 
-This starts:
+This starts the API at `http://localhost:8000` and PostgreSQL at `localhost:5432`.
+Interactive API documentation is available locally at `http://localhost:8000/docs`.
 
-- the FastAPI service on `http://localhost:8000`
-- PostgreSQL on `localhost:5432`
-
-### Option 2: Python Environment
-
-Create a Python environment and install dependencies:
+### Python environment
 
 ```bash
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
-```
-
-Run the API:
-
-```bash
 uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-When running without `DATABASE_URL`, the application uses in-memory repositories.
+Without `DATABASE_URL`, the application uses in-memory repositories and loses data on restart.
+For database-backed local development, use Docker Compose or configure PostgreSQL and run
+`alembic upgrade head`.
 
-## API Endpoints
-
-### System
-
-- `GET /health`
-- `GET /ready`
-- `GET /version`
-- `GET /metrics`
-
-### Jobs
-
-- `POST /v1/jobs:upload`
-- `GET /v1/jobs`
-- `GET /v1/jobs/{job_id}`
-
-### Analytics
-
-- `GET /v1/analytics/skills/top`
-- `GET /v1/analytics/technologies/top`
-- `GET /v1/analytics/skills/cooccurrence`
-
-### Candidate Matching
-
-- `POST /v1/candidates/matches`
-
-## Example Job Upload
+## Try the current workflow
 
 ```bash
 curl -X POST http://localhost:8000/v1/jobs:upload \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Senior Backend Engineer",
-    "description": "We need Python, FastAPI, PostgreSQL and AWS experience. Docker is required.",
+    "description": "Python, FastAPI, PostgreSQL, AWS, and Docker are required.",
     "source_name": "manual_upload",
     "work_mode": "remote",
     "location_text": "Remote - Brazil"
   }'
 ```
 
-## Example Candidate Match Request
+The stored job then appears in the jobs and analytics endpoints and can participate in candidate
+matching. See [API examples](docs/07-api-examples.md) for the complete local workflow.
 
-```bash
-curl -X POST http://localhost:8000/v1/candidates/matches \
-  -H "Content-Type: application/json" \
-  -d '{
-    "summary": "Python engineer with AWS API experience.",
-    "skills": [
-      {"name": "python"},
-      {"name": "sql"}
-    ],
-    "location": "Brazil",
-    "years_experience": 5
-  }'
-```
+## API surface
 
-## Testing
+- System: `GET /health`, `/ready`, `/version`, and `/metrics`
+- Jobs: `POST /v1/jobs:upload`, `GET /v1/jobs`, and `GET /v1/jobs/{job_id}`
+- Analytics: top skills, top technologies, and skill co-occurrence
+- Matching: `POST /v1/candidates/matches`
 
-Run the Python test suite:
+## Documentation
 
-```bash
-pytest
-```
+- [Product vision](docs/00-product-vision.md)
+- [Product requirements](docs/02-prd.md)
+- [Current and target architecture](docs/03-architecture.md)
+- [Evidence-based roadmap](docs/04-roadmap.md)
+- [Operational runbook](docs/05-operational-runbook.md)
+- [Local development](docs/06-local-development.md)
+- [Deployment guide](docs/08-deployment-guide.md)
+- [Architecture decisions](docs/adr/)
 
-Additional static checks:
+## Quality checks
 
 ```bash
 ruff check .
+ruff format --check .
 mypy
+pytest
 python -m compileall src apps tests alembic
 ```
 
-## Deployment Direction
+## Live demo
 
-- application runtime: ECS Fargate
-- database: RDS PostgreSQL
-- secrets: AWS Secrets Manager
-- infrastructure: Terraform
-- logs: CloudWatch
+There is no verified live deployment or demo URL yet.
 
-See [terraform/README.md](terraform/README.md) for the infrastructure baseline.
+Deployment milestone checklist:
 
-## Trade-Offs
+- [ ] select and validate an authorized real job source
+- [ ] deploy the API and PostgreSQL with production safeguards
+- [ ] add a minimal public job explorer and market view
+- [ ] configure monitoring, retention, backups, and a rollback path
+- [ ] publish and continuously verify the live URL
 
-- modular monolith over microservices
-- deterministic enrichment first, optional LLM integration later
-- one source and one backend well-implemented over shallow feature breadth
-- in-process metrics now, external metrics platform later
+## Repository layout
 
-## Known Limitations
-
-- running the full application requires Docker Compose or a local Python environment with PostgreSQL configured
-- metrics are process-local and reset on restart
-- no tracing backend is configured yet
-- current analytics scope is intentionally narrow and API-first
-- the exploratory notebook is not part of the production runtime
+```text
+apps/         Application entrypoints
+docs/         Product, architecture, roadmap, and operational documentation
+notebooks/    Preserved Version 1 exploratory assets
+src/          Version 2 application package
+tests/        Unit and API tests
+alembic/      Database migrations
+docker/       Container runtime notes
+terraform/    Unprovisioned AWS infrastructure baseline
+```

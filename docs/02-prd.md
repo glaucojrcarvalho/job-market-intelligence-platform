@@ -4,7 +4,7 @@
 
 - Status: Active
 - Date: July 19, 2026
-- Product: Job Market Intelligence Platform
+- Product: Software Engineering Market Intelligence Platform
 
 ## 1. Problem Statement
 
@@ -21,7 +21,13 @@ The current ecosystem is optimized for vacancy discovery, not labor-market intel
 
 ## 2. Product Goal
 
-Create a production-grade backend platform that ingests job postings and transforms them into structured intelligence for analytics and candidate matching.
+Create a usable market-intelligence product that ingests software-engineering job postings from
+supported sources and transforms them into normalized data for discovery, analytics, and
+candidate matching.
+
+The current repository is a backend foundation. Manual upload, deterministic enrichment,
+analytics, and matching are implemented. An operational external source, scheduled ingestion,
+deduplication, public interface, and production deployment remain release work.
 
 ## 3. Target Users
 
@@ -67,21 +73,29 @@ Unlike a notebook or generic scraper, the product will provide repeatable ingest
 
 ## 6. Product Scope
 
-### In Scope For MVP
+### Implemented Foundation
 
-- job ingestion from one initial source
-- manual upload or adapter-triggered ingestion
+- manual job upload through the API
 - raw job storage
 - normalized job model
 - deterministic enrichment for skills, technologies, cloud providers, frameworks, and seniority
-- analytics endpoints for demand by skill, location, seniority, and work mode
-- candidate profile intake
+- analytics endpoints for skill and technology frequency and skill co-occurrence
+- structured candidate profile intake per request
 - candidate-job match scoring
 - evidence and missing-skill output
 - health endpoints
 - OpenAPI documentation
 
-### Out Of Scope For MVP
+### Planned Product MVP
+
+- one authorized and operational external source connector
+- scheduled, observable, and idempotent ingestion
+- deterministic deduplication and update detection
+- filtering and pagination for job discovery
+- a minimal public job explorer and market dashboard
+- production deployment and a verified demo URL
+
+### Out Of Scope For The Product MVP
 
 - broad multi-source scraping coverage
 - polished end-user frontend
@@ -94,7 +108,7 @@ Unlike a notebook or generic scraper, the product will provide repeatable ingest
 
 ### A. Job Ingestion
 
-- ingest job postings from an initial source adapter
+- ingest job postings from one validated source adapter
 - accept manual job payload upload through API
 - validate incoming payloads
 - persist raw and normalized records separately
@@ -227,7 +241,7 @@ Unlike a notebook or generic scraper, the product will provide repeatable ingest
 
 ## 12. MVP Release Criteria
 
-The MVP is ready when:
+The product MVP will be ready when:
 
 - at least one ingestion source is operational
 - jobs are stored in PostgreSQL
@@ -236,6 +250,7 @@ The MVP is ready when:
 - candidate-job match scoring is available
 - automated tests cover critical services and API flows
 - the application runs locally through Docker Compose
+- a minimal public interface and verified deployment are available
 
 ## 13. Future Roadmap
 
