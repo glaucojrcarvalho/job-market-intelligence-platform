@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
 from job_market.domain.analytics.models import MetricBucket, SkillCooccurrence
+from job_market.domain.jobs.models import WorkMode
 from job_market.interfaces.api.dependencies import ServiceRegistry, get_registry, get_version
 from job_market.interfaces.schemas.analytics import (
     MetricBucketResponse,
@@ -74,8 +75,19 @@ def upload_job(
 
 
 @router.get("/v1/jobs", response_model=list[JobResponse], tags=["jobs"])
-def list_jobs(registry: RegistryDependency) -> list[JobResponse]:
-    return registry.list_jobs()
+def list_jobs(
+    registry: RegistryDependency,
+    limit: Annotated[int | None, Query(ge=1, le=100)] = None,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    source_name: Annotated[str | None, Query(min_length=1, max_length=100)] = None,
+    work_mode: WorkMode | None = None,
+) -> list[JobResponse]:
+    return registry.list_jobs(
+        limit=limit,
+        offset=offset,
+        source_name=source_name,
+        work_mode=work_mode,
+    )
 
 
 @router.get("/v1/jobs/{job_id}", response_model=JobWithEnrichmentResponse, tags=["jobs"])

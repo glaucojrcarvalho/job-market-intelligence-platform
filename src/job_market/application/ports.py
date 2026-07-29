@@ -13,17 +13,25 @@ from job_market.domain.enrichment.models import (
     SkillEvidence,
     TechnologyEvidence,
 )
-from job_market.domain.jobs.models import JobPosting, RawJobRecord
+from job_market.domain.jobs.models import JobPosting, RawJobRecord, WorkMode
 from job_market.domain.matching.models import MatchResult
 
 
 class RawJobRepository(Protocol):
     def add(self, record: RawJobRecord) -> RawJobRecord: ...
+    def get_by_id(self, record_id: int) -> RawJobRecord | None: ...
 
 
 class JobRepository(Protocol):
     def add(self, job: JobPosting) -> JobPosting: ...
-    def list_all(self) -> Sequence[JobPosting]: ...
+    def list_all(
+        self,
+        *,
+        limit: int | None = None,
+        offset: int = 0,
+        source_name: str | None = None,
+        work_mode: WorkMode | None = None,
+    ) -> Sequence[JobPosting]: ...
     def get_by_id(self, job_id: int) -> JobPosting | None: ...
 
 

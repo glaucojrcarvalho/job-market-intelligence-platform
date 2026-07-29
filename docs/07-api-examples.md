@@ -39,11 +39,25 @@ curl -X POST http://localhost:8000/v1/jobs:upload \
 curl http://localhost:8000/v1/jobs
 ```
 
+The list remains unbounded when no query parameters are provided for compatibility. Public
+interfaces should request a bounded result set and may filter by source or work mode:
+
+```bash
+curl "http://localhost:8000/v1/jobs?limit=20&offset=0&source_name=manual_upload&work_mode=remote"
+```
+
+`limit` accepts 1 through 100. `offset` must be zero or greater. Supported work-mode values are
+`remote`, `hybrid`, `onsite`, and `unknown`.
+
 ## Get A Job
 
 ```bash
 curl http://localhost:8000/v1/jobs/1
 ```
+
+Job detail responses add the stored description, company, source URL, publication time, observation
+time, employment type, structured location, seniority hint, and enrichment when those values are
+available. Missing source fields remain `null`; the API does not infer them.
 
 ## Top Skills
 

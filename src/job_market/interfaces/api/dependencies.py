@@ -48,6 +48,7 @@ from job_market.infrastructure.repositories.memory import (
 from job_market.interfaces.schemas.candidates import CandidateProfileRequest
 from job_market.interfaces.schemas.jobs import (
     JobEnrichmentResponse,
+    JobLocationResponse,
     JobResponse,
     JobWithEnrichmentResponse,
     ManualJobUploadRequest,
@@ -99,10 +100,26 @@ class ServiceRegistry:
         enrichment = self.enrichment_service.enrich(job)
         if job.job_id is None:
             raise InvalidStateError("The stored job did not receive an identifier.")
-        return build_job_with_enrichment_response(job, enrichment)
+        return build_job_with_enrichment_response(
+            job,
+            enrichment,
+            observed_at=self.get_observed_at(job),
+        )
 
-    def list_jobs(self) -> list[JobResponse]:
-        jobs = self.job_repository.list_all()
+    def list_jobs(
+        self,
+        *,
+        limit: int | None = None,
+        offset: int = 0,
+        source_name: str | None = None,
+        work_mode: WorkMode | None = None,
+    ) -> list[JobResponse]:
+        jobs = self.job_repository.list_all(
+            limit=limit,
+            offset=offset,
+            source_name=source_name,
+            work_mode=work_mode,
+        )
         return [build_job_response(job) for job in jobs]
 
     def get_job(self, job_id: int) -> JobWithEnrichmentResponse:
@@ -110,7 +127,17 @@ class ServiceRegistry:
         if job is None:
             raise ResourceNotFoundError(f"Job {job_id} was not found.")
         enrichment = self.enrichment_repository.get_by_job_id(job_id)
-        return build_job_with_enrichment_response(job, enrichment)
+        return build_job_with_enrichment_response(
+            job,
+            enrichment,
+            observed_at=self.get_observed_at(job),
+        )
+
+    def get_observed_at(self, job: JobPosting) -> datetime | None:
+        if job.raw_record_id is None:
+            return None
+        raw_record = self.raw_job_repository.get_by_id(job.raw_record_id)
+        return raw_record.observed_at if raw_record else None
 
     def match_candidate(self, request: CandidateProfileRequest) -> list[DomainMatchResult]:
         candidate = CandidateProfile(
@@ -137,6 +164,10 @@ def build_job_response(job: JobPosting) -> JobResponse:
         work_mode=job.work_mode.value,
         location_text=job.location.raw_text,
         salary_text=job.compensation.raw_text,
+        company_name=job.company_name,
+        source_url=job.source_url,
+        posted_at=job.posted_at,
+        employment_type=job.employment_type.value,
     )
 
 
@@ -176,9 +207,20 @@ def build_job_enrichment_response(enrichment: JobEnrichment | None) -> JobEnrich
 def build_job_with_enrichment_response(
     job: JobPosting,
     enrichment: JobEnrichment | None,
+    *,
+    observed_at: datetime | None,
 ) -> JobWithEnrichmentResponse:
     return JobWithEnrichmentResponse(
         **build_job_response(job).model_dump(),
+        description=job.description,
+        location=JobLocationResponse(
+            country=job.location.country,
+            region=job.location.region,
+            city=job.location.city,
+            raw_text=job.location.raw_text,
+        ),
+        seniority_hint=job.seniority_hint.value,
+        observed_at=observed_at,
         enrichment=build_job_enrichment_response(enrichment),
     )
 

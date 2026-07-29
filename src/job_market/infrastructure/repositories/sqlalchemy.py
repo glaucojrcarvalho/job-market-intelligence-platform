@@ -56,6 +56,20 @@ class SqlAlchemyRawJobRepository:
                 observed_at=model.observed_at,
             )
 
+    def get_by_id(self, record_id: int) -> RawJobRecord | None:
+        with self._session_factory() as session:
+            model = session.get(RawJobRecordModel, record_id)
+            if model is None:
+                return None
+            return RawJobRecord(
+                record_id=model.id,
+                source_name=model.source_name,
+                source_job_id=model.source_job_id,
+                source_url=model.source_url,
+                payload=model.payload,
+                observed_at=model.observed_at,
+            )
+
 
 class SqlAlchemyJobRepository:
     def __init__(self, session_factory: SessionFactory) -> None:
@@ -88,9 +102,24 @@ class SqlAlchemyJobRepository:
             session.refresh(model)
             return _to_job_posting(model)
 
-    def list_all(self) -> list[JobPosting]:
+    def list_all(
+        self,
+        *,
+        limit: int | None = None,
+        offset: int = 0,
+        source_name: str | None = None,
+        work_mode: WorkMode | None = None,
+    ) -> list[JobPosting]:
         with self._session_factory() as session:
-            models = session.query(JobModel).order_by(JobModel.id.asc()).all()
+            query = session.query(JobModel)
+            if source_name is not None:
+                query = query.filter(JobModel.source_name == source_name)
+            if work_mode is not None:
+                query = query.filter(JobModel.work_mode == work_mode.value)
+            query = query.order_by(JobModel.id.asc()).offset(offset)
+            if limit is not None:
+                query = query.limit(limit)
+            models = query.all()
             return [_to_job_posting(model) for model in models]
 
     def get_by_id(self, job_id: int) -> JobPosting | None:
