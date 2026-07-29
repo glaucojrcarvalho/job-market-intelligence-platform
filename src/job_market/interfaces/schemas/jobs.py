@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 from job_market.domain.jobs.models import WorkMode
@@ -31,6 +33,17 @@ class JobResponse(BaseModel):
     work_mode: str
     location_text: str | None = None
     salary_text: str | None = None
+    company_name: str | None = None
+    source_url: str | None = None
+    posted_at: datetime | None = None
+    employment_type: str
+
+
+class JobLocationResponse(BaseModel):
+    country: str | None = None
+    region: str | None = None
+    city: str | None = None
+    raw_text: str | None = None
 
 
 class JobEnrichmentResponse(BaseModel):
@@ -46,4 +59,8 @@ class JobEnrichmentResponse(BaseModel):
 
 
 class JobWithEnrichmentResponse(JobResponse):
+    description: str
+    location: JobLocationResponse
+    seniority_hint: str
+    observed_at: datetime | None = None
     enrichment: JobEnrichmentResponse | None = None

@@ -6,7 +6,7 @@ from collections import Counter
 
 from job_market.domain.analytics.models import MetricBucket, SkillCooccurrence
 from job_market.domain.enrichment.models import JobEnrichment
-from job_market.domain.jobs.models import JobPosting, RawJobRecord
+from job_market.domain.jobs.models import JobPosting, RawJobRecord, WorkMode
 from job_market.domain.matching.models import MatchResult
 
 
@@ -27,6 +27,9 @@ class InMemoryRawJobRepository:
         self._next_id += 1
         self._records.append(stored)
         return stored
+
+    def get_by_id(self, record_id: int) -> RawJobRecord | None:
+        return next((record for record in self._records if record.record_id == record_id), None)
 
 
 class InMemoryJobRepository:
@@ -54,8 +57,24 @@ class InMemoryJobRepository:
         self._jobs.append(stored)
         return stored
 
-    def list_all(self) -> list[JobPosting]:
-        return list(self._jobs)
+    def list_all(
+        self,
+        *,
+        limit: int | None = None,
+        offset: int = 0,
+        source_name: str | None = None,
+        work_mode: WorkMode | None = None,
+    ) -> list[JobPosting]:
+        jobs = self._jobs
+        if source_name is not None:
+            jobs = [job for job in jobs if job.source_name == source_name]
+        if work_mode is not None:
+            jobs = [job for job in jobs if job.work_mode == work_mode]
+
+        bounded_jobs = jobs[offset:]
+        if limit is not None:
+            bounded_jobs = bounded_jobs[:limit]
+        return list(bounded_jobs)
 
     def get_by_id(self, job_id: int) -> JobPosting | None:
         return next((job for job in self._jobs if job.job_id == job_id), None)
