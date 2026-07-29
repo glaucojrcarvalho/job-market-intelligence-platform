@@ -93,6 +93,19 @@ curl -X POST http://localhost:8000/v1/candidates/matches \
   }'
 ```
 
+Candidate profiles use bounded structured input:
+
+- summary: 10 to 2,000 characters after trimming
+- skills: 1 to 50 entries, each with a 1 to 100 character name
+- optional proficiency: 1 to 50 characters
+- optional location: 1 to 255 characters
+- optional years of experience: 0 to 80
+
+Skill names are deduplicated case-insensitively after trimming. When duplicates provide different
+proficiency values, the first entry is retained.
+
+The endpoint does not accept CV files or require names, email addresses, or contact details.
+
 ## Expected Response Characteristics
 
 Job enrichment responses include:

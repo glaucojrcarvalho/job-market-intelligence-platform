@@ -164,3 +164,61 @@ def test_candidate_matches_endpoint(client: TestClient) -> None:
     assert len(body) == 1
     assert body[0]["match_score"] == pytest.approx(0.55)
     assert any(reason["type"] == "technology_alignment" for reason in body[0]["reasons"])
+
+
+@pytest.mark.parametrize(
+    ("candidate_overrides", "field"),
+    [
+        ({"summary": "   "}, "summary"),
+        ({"summary": "Too short"}, "summary"),
+        ({"summary": "x" * 2001}, "summary"),
+        ({"skills": []}, "skills"),
+        ({"skills": [{"name": "python"}] * 51}, "skills"),
+        ({"skills": [{"name": "   "}]}, "name"),
+        ({"skills": [{"name": "x" * 101}]}, "name"),
+        ({"skills": [{"name": "python", "proficiency": "x" * 51}]}, "proficiency"),
+        ({"location": "x" * 256}, "location"),
+        ({"years_experience": -1}, "years_experience"),
+        ({"years_experience": 81}, "years_experience"),
+    ],
+)
+def test_candidate_matches_rejects_invalid_profile_fields(
+    client: TestClient,
+    candidate_overrides: dict[str, object],
+    field: str,
+) -> None:
+    candidate = {
+        "summary": "Synthetic engineer profile.",
+        "skills": [{"name": "python"}],
+        **candidate_overrides,
+    }
+
+    response = client.post("/v1/candidates/matches", json=candidate)
+
+    assert response.status_code == 422
+    assert response.json()["error"] == "validation_error"
+    assert any(field in error["loc"] for error in response.json()["details"])
+
+
+def test_candidate_matches_trims_profile_text(client: TestClient) -> None:
+    client.post(
+        "/v1/jobs:upload",
+        json={
+            "title": "Synthetic Backend Engineer",
+            "description": "Python required.",
+            "source_name": "manual_upload",
+        },
+    )
+
+    response = client.post(
+        "/v1/candidates/matches",
+        json={
+            "summary": "  Synthetic Python engineer.  ",
+            "skills": [{"name": "  python  ", "proficiency": "  advanced  "}],
+            "location": "  Remote  ",
+            "years_experience": 4,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()[0]["matching_skills"] == ["python"]
