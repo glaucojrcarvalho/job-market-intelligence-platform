@@ -16,3 +16,8 @@ chromedriver
 chromedriver.exe
 geckodriver
 geckodriver.exe
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
