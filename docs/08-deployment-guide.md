@@ -2,13 +2,16 @@
 
 ## Overview
 
-The repository currently supports a deployment direction built around:
+The repository contains an unprovisioned deployment baseline built around:
 
 - Docker image
 - ECS Fargate
 - RDS PostgreSQL
 - Secrets Manager
 - Terraform
+
+There is no verified live environment or demo URL. The presence of these definitions does not mean
+the application has been deployed or production-hardened.
 
 ## Build The Image
 

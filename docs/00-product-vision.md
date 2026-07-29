@@ -2,13 +2,35 @@
 
 ## Overview
 
-Job Market Intelligence Platform transforms raw software and data job postings into structured market intelligence for engineers, recruiters, and career advisors.
+Software Engineering Market Intelligence Platform transforms raw software-engineering job
+postings into normalized, queryable market intelligence for engineers, recruiters, hiring
+managers, and career advisors.
 
-The current repository began as a notebook that scraped and analyzed a narrow slice of vacancies. The product vision expands that prototype into a backend-first platform that continuously ingests jobs, normalizes labor-market data, enriches postings with deterministic NLP and selective AI, and exposes the results through a production-grade API.
+The repository began with a GeekHunter-based exploratory notebook. Version 2 preserves that
+foundation while evolving toward a multi-source product. The current backend accepts manual
+records, normalizes and enriches them, and exposes API workflows. Continuous external ingestion
+and a public product are target capabilities, not current ones.
+
+## Project Evolution
+
+### Version 1 — Single-source market analysis
+
+Version 1 used GeekHunter job data for exploratory analysis of technology demand and job
+characteristics. The notebook remains valuable historical evidence and an analytical foundation;
+it is not part of the application runtime.
+
+### Version 2 — Multi-source market intelligence platform
+
+Version 2 is an incremental evolution toward supported, authorized source connectors, a
+source-independent job model, market analytics, job discovery, candidate matching, and future
+AI-assisted insights. The first public-product milestone is a deployed, usable experience backed
+by a validated real data source.
 
 ## Vision Statement
 
-Build a production-ready platform that helps technical professionals understand demand in the job market, identify skill gaps, and match candidates to roles using transparent, explainable intelligence.
+Build a trustworthy product that helps people understand software-engineering labor-market demand,
+discover relevant roles, identify skill gaps, and compare candidates with jobs using transparent,
+explainable intelligence.
 
 ## Target Users
 
@@ -51,12 +73,12 @@ The platform turns unstructured job postings into structured, queryable intellig
 ### Near Term
 
 - Build a backend platform around ingestion, normalization, enrichment, analytics, and matching.
-- Support one source first, but design for multiple adapters.
+- Select one supported real source first, while keeping source-specific mapping behind adapters.
 - Expose all major capabilities through a FastAPI application.
 
 ### Longer Term
 
-- Add scheduled imports and API ingestion.
+- Add scheduled imports from authorized APIs, feeds, or company-hosted ATS endpoints.
 - Support candidate profile analysis and job matching.
 - Add semantic search and selective LLM-assisted summaries.
 - Expand to trend intelligence over time and region.
