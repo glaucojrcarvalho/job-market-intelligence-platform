@@ -49,6 +49,7 @@ def test_upload_job_and_query_enrichment(client: TestClient) -> None:
     assert body["company_name"] is None
     assert body["description"].startswith("We need Python")
     assert body["employment_type"] == "unknown"
+    assert body["seniority_hint"] == "unknown"
     assert body["location"]["raw_text"] == "Remote - Brazil"
     assert body["observed_at"] is not None
     assert body["enrichment"]["role_family"] == "backend_engineering"
