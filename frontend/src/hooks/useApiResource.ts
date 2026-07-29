@@ -26,10 +26,15 @@ export function useApiResource<T>(
     setState({ status: 'loading' })
     load(controller.signal)
       .then((data) => {
-        setState({ status: 'success', data })
+        if (!controller.signal.aborted) {
+          setState({ status: 'success', data })
+        }
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') {
+        if (
+          controller.signal.aborted ||
+          (error instanceof DOMException && error.name === 'AbortError')
+        ) {
           return
         }
 

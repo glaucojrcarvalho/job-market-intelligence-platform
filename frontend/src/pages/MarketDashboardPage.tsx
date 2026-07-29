@@ -22,7 +22,9 @@ function countWorkModes(jobs: JobSummary[]) {
   const counts = new Map<string, number>()
 
   for (const job of jobs) {
-    const workMode = job.work_mode || 'unknown'
+    const workMode = workModeOrder.includes(job.work_mode)
+      ? job.work_mode
+      : 'unknown'
     counts.set(workMode, (counts.get(workMode) ?? 0) + 1)
   }
 
