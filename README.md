@@ -110,6 +110,7 @@ matching. See [API examples](docs/07-api-examples.md) for the complete local wor
 
 - [Product vision](docs/00-product-vision.md)
 - [Product requirements](docs/02-prd.md)
+- [Frontend product scope](docs/09-frontend-product-scope.md)
 - [Current and target architecture](docs/03-architecture.md)
 - [Evidence-based roadmap](docs/04-roadmap.md)
 - [Operational runbook](docs/05-operational-runbook.md)
